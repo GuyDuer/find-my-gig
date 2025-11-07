@@ -12,7 +12,7 @@ const updateSchema = z.object({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,8 +20,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const ticket = await prisma.ticket.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         job: true,
         artifacts: {
@@ -52,7 +54,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -60,12 +62,14 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const body = await req.json();
     const validatedData = updateSchema.parse(body);
 
     // Verify ownership
     const existing = await prisma.ticket.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existing || existing.userId !== session.user.id) {
@@ -85,7 +89,7 @@ export async function PATCH(
     }
 
     const ticket = await prisma.ticket.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         job: true,
