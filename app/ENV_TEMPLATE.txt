@@ -1,0 +1,61 @@
+# Environment Variables Template for Find My Gig
+# Copy this file to .env and fill in your values
+
+# ============================================
+# DATABASE
+# ============================================
+DATABASE_URL="postgresql://user:password@localhost:5432/find_my_gig?schema=public"
+
+# Local PostgreSQL example:
+# DATABASE_URL="postgresql://postgres:password@localhost:5432/find_my_gig?schema=public"
+
+# Vercel Postgres example:
+# DATABASE_URL="postgres://default:xxxxx@xxxx-pooler.us-east-1.postgres.vercel-storage.com/verceldb?sslmode=require"
+
+# ============================================
+# NEXTAUTH
+# ============================================
+# Generate a secret with: openssl rand -base64 32
+NEXTAUTH_SECRET="your-secret-key-here-use-openssl-rand-base64-32"
+
+# Your application URL (update for production)
+NEXTAUTH_URL="http://localhost:3000"
+
+# ============================================
+# ANTHROPIC API (Claude)
+# ============================================
+# Get your API key from: https://console.anthropic.com/
+ANTHROPIC_API_KEY="sk-ant-xxxxx"
+
+# ============================================
+# RESEND (Email Service)
+# ============================================
+# Get your API key from: https://resend.com/
+RESEND_API_KEY="re_xxxxx"
+
+# Must be a verified domain/email in Resend
+FROM_EMAIL="noreply@yourdomain.com"
+
+# ============================================
+# APPLICATION CONFIGURATION
+# ============================================
+APP_URL="http://localhost:3000"
+NODE_ENV="development"
+
+# ============================================
+# CRON JOB SECURITY (Optional)
+# ============================================
+# Add this to secure your cron endpoint
+# Generate with: openssl rand -base64 32
+CRON_SECRET="your-cron-secret-here"
+
+# ============================================
+# NOTES
+# ============================================
+# 1. Never commit this file with real values to git
+# 2. Add .env to your .gitignore (already done)
+# 3. Update NEXTAUTH_URL and APP_URL for production
+# 4. Verify FROM_EMAIL in Resend dashboard before using
+# 5. Keep NEXTAUTH_SECRET and CRON_SECRET secure
+# 6. Use environment variables in Vercel dashboard for production
+

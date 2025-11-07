@@ -1,0 +1,209 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  baseCV        String?   // Stored as plain text
+  baseCVDocx    Bytes?    // Original DOCX file
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  accounts      Account[]
+  sessions      Session[]
+  preferences   UserPreferenceSet[]
+  tickets       Ticket[]
+  scanConfig    ScanConfig?
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model UserPreferenceSet {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  active    Boolean  @default(true)
+  roles     String[] // e.g., ["RevOps", "BizOps", "CX Ops"]
+  locations String[] // e.g., ["Israel"]
+  companies String[] // e.g., ["Impala", "Firebolt"]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_preference_sets")
+}
+
+model ScanConfig {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  enabled      Boolean  @default(true)
+  threshold    Int      @default(65) // Minimum overall score to create ticket
+  timezone     String   @default("Asia/Jerusalem")
+  lastScanAt   DateTime?
+  nextScanAt   DateTime?
+  snoozeUntil  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("scan_configs")
+}
+
+model Job {
+  id              String    @id @default(cuid())
+  title           String
+  company         String
+  description     String    @db.Text
+  descriptionHash String    // For deduplication
+  url             String?
+  locations       String[]
+  roleTags        String[]  // Mapped to taxonomy
+  workMode        String?   // Remote, Hybrid, Onsite
+  postingDate     DateTime?
+  expiryDate      DateTime?
+  source          String    // e.g., "LinkedIn", "Indeed", "Company Site"
+  rawData         Json?     // Original scraped data
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tickets Ticket[]
+
+  @@unique([title, company, descriptionHash])
+  @@index([active, postingDate])
+  @@index([company])
+  @@map("jobs")
+}
+
+model Ticket {
+  id                String       @id @default(cuid())
+  userId            String
+  jobId             String
+  status            TicketStatus @default(IDENTIFIED)
+  userToJobScore    Float        // 0-100
+  jobToUserScore    Float        // 0-100
+  overallScore      Float        // min(0.6*U2J + 0.4*J2U, 100)
+  scoringExplanation String      @db.Text
+  tags              String[]     // e.g., ["High Fit!", "Match!", "Stretch Role"]
+  applicationMethod String?      // "Email", "LinkedIn", "Company Site"
+  submittedAt       DateTime?
+  snoozedUntil      DateTime?
+  archivedAt        DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  artifacts Artifact[]
+
+  @@unique([userId, jobId])
+  @@index([userId, status])
+  @@index([createdAt])
+  @@map("tickets")
+}
+
+enum TicketStatus {
+  IDENTIFIED
+  SUBMITTED
+  REJECTED
+  WONT_GO_AFTER
+}
+
+model Artifact {
+  id         String       @id @default(cuid())
+  ticketId   String
+  type       ArtifactType
+  content    String?      @db.Text // For text content (cover letter, parsed CV)
+  fileData   Bytes?       // For binary files (DOCX, PDF)
+  fileName   String?
+  mimeType   String?
+  createdAt  DateTime     @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("artifacts")
+}
+
+enum ArtifactType {
+  CV_DOCX
+  CV_PDF
+  COVER_LETTER_TXT
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  read      Boolean          @default(false)
+  data      Json?            // Additional data (e.g., ticket IDs, links)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  NEW_TICKET
+  DAILY_DIGEST
+  HIGH_FIT_JOB
+  SYSTEM
+}

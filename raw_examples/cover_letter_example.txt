@@ -1,0 +1,14 @@
+Header: Head of Business Operations Role - CV
+Body:
+
+Hey team,
+
+I'm Guy :) 
+
+I built business operations at Firebolt from zero, from forecasting and board reporting to cross-functional programs, PLG motion and AI automation from the ground up (LangChain and then AWS Bedrock).
+Now I want to do it for Impala. I understand your space, have built these systems before, and possess technical depth most BizOps people lack. 
+
+Will love to chat, CV attached.
+
+Thanks,
+Guy
